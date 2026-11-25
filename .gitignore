@@ -4,6 +4,7 @@ datasets/croissant.json
 prepare_hf_release.py
 
 # Local runs and credentials.
+benchmark/source_articles.local.json
 .env
 .env.*
 !.env.example

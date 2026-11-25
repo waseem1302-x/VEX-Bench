@@ -34,7 +34,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / ".env", override=True)
 
-from benchmark import Benchmark, TASKS
+from benchmark import Benchmark, TASKS, missing_rewrite_sources, warn_missing_sources
 from benchmark.data import DOMAIN_TOPICS, DOMAINS
 from benchmark.methods import DirectPrompt, ISCMethod, MisinfoQAMethod, PoisonedRAGMethod, DisinfoCapMethod, PAPMethod, JailNewsBenchMethod
 from benchmark.methods.PAP.taxonomy import TECHNIQUE_CHOICES as PAP_TECHNIQUE_CHOICES
@@ -138,6 +138,7 @@ def dry_run(method, tasks, domains):
     """Print prompts for all conditions without calling API."""
     from benchmark.data import load_source_articles
     source_articles = load_source_articles()
+    warn_missing_sources(missing_rewrite_sources(tasks, domains, source_articles))
 
     for task in (tasks or TASKS):
         for domain in (domains or DOMAINS):

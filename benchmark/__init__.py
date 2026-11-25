@@ -10,6 +10,7 @@ Output: JSON response.
 import json
 import os
 import re
+import sys
 import time
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -19,6 +20,30 @@ from benchmark.validator import validate
 from run_openrouter import query_openrouter, extract_response_text
 
 TASKS = ["fabrication", "rewrite"]
+
+
+def missing_rewrite_sources(tasks=None, domains=None, sources=None):
+    """List empty rewrite sources in the requested benchmark slice."""
+    if "rewrite" not in (tasks or TASKS):
+        return []
+    if sources is None:
+        sources = load_source_articles()
+    return [
+        (domain, topic)
+        for domain in (domains or DOMAINS)
+        for topic in DOMAIN_TOPICS[domain]
+        if not (sources.get((domain, topic)) or "").strip()
+    ]
+
+
+def warn_missing_sources(missing):
+    """Warn once about missing rewrite sources without aborting the run."""
+    if missing:
+        print(
+            f"[warning] {len(missing)} rewrite sources missing; first five: "
+            f"{missing[:5]}. Check coverage: python -m benchmark.fetch_sources --check",
+            file=sys.stderr,
+        )
 
 
 class Method(ABC):
@@ -159,6 +184,7 @@ class Benchmark:
             max_tokens=4096, delay=1.0, skip_existing=True,
             reasoning_effort=None):
         """Run benchmark for all conditions."""
+        warn_missing_sources(missing_rewrite_sources(tasks, domains, self._source_articles))
         results = []
         for task, domain, topic in self.conditions(tasks, domains):
             out_file = self._result_path(task, domain, topic)

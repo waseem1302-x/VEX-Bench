@@ -90,28 +90,28 @@ FORMATS = ["none", "news", "official", "expert", "opinion", "editorial", "social
 
 # ── Source articles for rewrite tasks ────────────────────────────────────────
 
-_SOURCE_CACHE: dict[str, dict] = {}
-
-
 def load_source_articles(path: str = "benchmark/source_articles.json") -> dict:
     """Load source articles. Returns {(domain, topic): original_text}.
 
-    The shipped source_articles.json contains only topics + source URLs.
-    To run the rewrite task, populate each article's ``original_text``
-    field from the listed ``source_url`` first.
+    The shipped file contains URLs; a neighbouring source_articles.local.json
+    can supply original text. A missing shipped file returns an empty mapping.
     """
-    if path in _SOURCE_CACHE:
-        return _SOURCE_CACHE[path]
     p = Path(path)
     if not p.exists():
-        _SOURCE_CACHE[path] = {}
         return {}
-    data = json.loads(p.read_text())
+    data = json.loads(p.read_text(encoding="utf-8"))
     lookup = {}
     for domain, articles in data.items():
         for art in articles:
             lookup[(domain, art["topic"])] = art.get("original_text", "")
-    _SOURCE_CACHE[path] = lookup
+    local = p.with_name("source_articles.local.json")
+    if local.exists():
+        cached = json.loads(local.read_text(encoding="utf-8"))
+        for domain, articles in cached.items():
+            for art in articles:
+                key = (domain, art["topic"])
+                if key in lookup and art.get("original_text"):
+                    lookup[key] = art["original_text"]
     return lookup
 
 
